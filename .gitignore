@@ -19,3 +19,21 @@ client/dist/
 # OS
 .DS_Store
 Thumbs.db
+
+
+# IDEs
+.vscode/
+.idea/
+.cursor/
+
+# zip files
+*.zip
+*.tar
+*.tar.gz
+*.tar.bz2
+*.tar.xz
+*.tar.lzma
+*.tar.lz
+*.tar.lz4
+*.tar.zstd
+*.tar.zstd
