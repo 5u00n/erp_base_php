@@ -1,8 +1,13 @@
-# Backend
+# Backend / PHP
 backend/vendor/
 # Composer dependencies at repo root (run `composer install`)
 /vendor/
 backend/.env
+.env
+# SQLite and generated uploads (repo root layout)
+/database/erp.db
+/database/erp-*.db
+/uploads/
 backend/database/erp.db
 backend/database/erp-*.db
 backend/uploads/
@@ -14,4 +19,3 @@ client/dist/
 # OS
 .DS_Store
 Thumbs.db
-.env
