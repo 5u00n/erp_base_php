@@ -66,6 +66,25 @@ $req = [
     'projectApi'  => null,
 ];
 
+/**
+ * SPA HTML shell with <base> + __APP_BASE__ (same root or sub-folder deploys).
+ */
+$serveSpaShell = static function (): void {
+    $scriptDir  = str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME']));
+    $publicPath = rtrim($scriptDir, '/') . '/';
+    $appBase    = rtrim(dirname(rtrim($scriptDir, '/')), '/') . '/';
+
+    $html = file_get_contents(__DIR__ . '/index.html');
+    // <base> must be the first URL-related child of <head> so relative href="styles.css" /
+    // src="app.js" resolve against public/ even when the page URL is /projects/{id} etc.
+    $inject = '<base href="' . htmlspecialchars($publicPath, ENT_QUOTES) . '">'
+            . '<script>window.__APP_BASE__="' . addslashes($appBase) . '";</script>';
+    $html = preg_replace('/<head\s*>/i', '$0' . $inject, $html, 1);
+
+    header('Content-Type: text/html; charset=utf-8');
+    echo $html;
+};
+
 // ── Dispatch ──────────────────────────────────────────────────────────────────
 $routeDefinitions = require __DIR__ . '/../src/Routes/api.php';
 $dispatcher = FastRoute\simpleDispatcher($routeDefinitions);
@@ -76,24 +95,7 @@ switch ($routeInfo[0]) {
     case FastRoute\Dispatcher::NOT_FOUND:
         if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             // SPA fallback — serve the shell for any unknown GET path.
-            // Inject a <base> tag + window.__APP_BASE__ so the vanilla JS SPA works
-            // correctly whether the project is at the server root or in a sub-folder
-            // (e.g. http://localhost/erp_base_php/).
-            //
-            // SCRIPT_NAME example: /erp_base_php/public/index.php
-            //   publicPath = /erp_base_php/public/   ← where styles.css / app.js live
-            //   appBase    = /erp_base_php/           ← prefix for all API calls & SPA routes
-            $scriptDir  = str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME']));
-            $publicPath = rtrim($scriptDir, '/') . '/';
-            $appBase    = rtrim(dirname(rtrim($scriptDir, '/')), '/') . '/';
-
-            $html = file_get_contents(__DIR__ . '/index.html');
-            $inject = '<base href="' . htmlspecialchars($publicPath, ENT_QUOTES) . '">'
-                    . '<script>window.__APP_BASE__="' . addslashes($appBase) . '";</script>';
-            $html = str_replace('</head>', $inject . '</head>', $html);
-
-            header('Content-Type: text/html; charset=utf-8');
-            echo $html;
+            $serveSpaShell();
             exit;
         }
         header('Content-Type: application/json; charset=utf-8');
@@ -108,8 +110,25 @@ switch ($routeInfo[0]) {
         exit;
 
     case FastRoute\Dispatcher::FOUND:
-        header('Content-Type: application/json; charset=utf-8');
         [$_status, [$middlewareList, [$controllerClass, $method]], $params] = $routeInfo;
+        // The SPA route `/projects/:id` uses the same path as `GET /projects/{projectId}` (JSON API).
+        // A full page refresh sends a document GET without `Authorization`; that would 401 before
+        // the app loads. Browsers send `Sec-Fetch-Dest: document` (and usually `Sec-Fetch-Mode:
+        // navigate`) for top-level navigations; same-origin `fetch()` does not.
+        $secFetchDest = $_SERVER['HTTP_SEC_FETCH_DEST'] ?? '';
+        $secFetchMode = $_SERVER['HTTP_SEC_FETCH_MODE'] ?? '';
+        $isDocumentNavigation = ($secFetchDest === 'document')
+            || ($secFetchDest === '' && $secFetchMode === 'navigate');
+        if (
+            $_SERVER['REQUEST_METHOD'] === 'GET'
+            && $controllerClass === \App\Controllers\ProjectController::class
+            && $method === 'get'
+            && $isDocumentNavigation
+        ) {
+            $serveSpaShell();
+            exit;
+        }
+        header('Content-Type: application/json; charset=utf-8');
         $req['params'] = $params;
         break;
 }
