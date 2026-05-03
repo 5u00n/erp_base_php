@@ -1,0 +1,27 @@
+{
+  "name": "erp-base/backend",
+  "description": "ERP Base — plain PHP backend (nikic/fast-route, PDO, no framework)",
+  "type": "project",
+  "require": {
+    "php": "^8.2",
+    "nikic/fast-route": "^1.3",
+    "vlucas/phpdotenv": "^5.6",
+    "firebase/php-jwt": "^6.10",
+    "phpmailer/phpmailer": "^6.9",
+    "minishlink/web-push": "^9.0",
+    "dompdf/dompdf": "^3.1",
+    "stripe/stripe-php": "^16.0"
+  },
+  "autoload": {
+    "psr-4": {
+      "App\\": "src/"
+    }
+  },
+  "config": {
+    "optimize-autoloader": true,
+    "audit": {
+      "abandoned": "report",
+      "block-insecure": false
+    }
+  }
+}

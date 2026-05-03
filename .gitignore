@@ -1,0 +1,17 @@
+# Backend
+backend/vendor/
+# Composer dependencies at repo root (run `composer install`)
+/vendor/
+backend/.env
+backend/database/erp.db
+backend/database/erp-*.db
+backend/uploads/
+
+# Frontend
+client/node_modules/
+client/dist/
+
+# OS
+.DS_Store
+Thumbs.db
+.env
