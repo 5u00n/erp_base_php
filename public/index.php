@@ -68,11 +68,27 @@ $req = [
 
 /**
  * SPA HTML shell with <base> + __APP_BASE__ (same root or sub-folder deploys).
+ * When bootstrapped from the project root index.php, SCRIPT_NAME is .../index.php
+ * (not .../public/index.php) — dirname would wrongly be the app base instead of
+ * public/, so relative app.js / styles.css would load HTML and break module MIME checks.
  */
 $serveSpaShell = static function (): void {
-    $scriptDir  = str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME']));
-    $publicPath = rtrim($scriptDir, '/') . '/';
-    $appBase    = rtrim(dirname(rtrim($scriptDir, '/')), '/') . '/';
+    $scriptName = str_replace('\\', '/', $_SERVER['SCRIPT_NAME'] ?? '/index.php');
+    $publicFs   = realpath(__DIR__);
+    $docRoot    = isset($_SERVER['DOCUMENT_ROOT']) ? realpath($_SERVER['DOCUMENT_ROOT']) : false;
+
+    if ($publicFs && $docRoot && $publicFs === $docRoot) {
+        // DocumentRoot is this `public/` folder — assets are served from the URL dir of index.php.
+        $dir = str_replace('\\', '/', dirname($scriptName));
+        $publicPath = ($dir === '/' || $dir === '.') ? '/' : rtrim($dir, '/') . '/';
+        $appBase    = $publicPath;
+    } elseif (str_ends_with($scriptName, '/public/index.php')) {
+        $publicPath = rtrim(dirname($scriptName), '/') . '/';
+        $appBase    = rtrim(dirname(rtrim($publicPath, '/')), '/') . '/';
+    } else {
+        $publicPath = rtrim(dirname($scriptName), '/') . '/public/';
+        $appBase    = rtrim(dirname(rtrim($publicPath, '/')), '/') . '/';
+    }
 
     $html = file_get_contents(__DIR__ . '/index.html');
     // <base> must be the first URL-related child of <head> so relative href="styles.css" /

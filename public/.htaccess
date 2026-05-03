@@ -1,0 +1,8 @@
+# Use this when the vhost / domain DocumentRoot points at the `public/` folder
+# (typical shared hosting: public_html = this directory).
+
+DirectoryIndex index.php
+
+RewriteEngine On
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteRule ^ index.php [L]

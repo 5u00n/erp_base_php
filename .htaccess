@@ -1,4 +1,8 @@
+# "-d" must NOT be used here: "/" maps to DocumentRoot, which is a directory,
+# so the rule would never run and you'd get 403 with "directory index" denied.
+
+DirectoryIndex index.php
+
 RewriteEngine On
 RewriteCond %{REQUEST_FILENAME} !-f
-RewriteCond %{REQUEST_FILENAME} !-d
-RewriteRule ^ public/index.php [L]
+RewriteRule ^ index.php [L]
